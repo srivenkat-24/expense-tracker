@@ -207,7 +207,17 @@
       let percentRemaining = (remainingSalary / salary) * 100;
       progress.style.width = `${percentRemaining}%`;
       progress.innerText = `${percentRemaining.toFixed(2)}% of salary remaining`;
-      progress.style.backgroundColor = percentRemaining > 75 ? 'green' : percentRemaining > 45 ? 'yellow' : 'red';
+      //progress.style.backgroundColor = percentRemaining > 75 ? 'green' : percentRemaining > 45 ? 'yellow' : 'red';
+      if (percentRemaining > 75) {
+        progress.style.backgroundColor = 'green';
+        progress.style.color = 'white';
+      } else if (percentRemaining > 45) {
+        progress.style.backgroundColor = 'yellow';
+        progress.style.color = 'black';  // ✅ Changes text color for visibility
+      } else {
+        progress.style.backgroundColor = 'red';
+        progress.style.color = 'white';
+      }
       
       function createPieChart(canvasId, data) {
         new Chart(document.getElementById(canvasId), {
