@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Expense Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f4f8;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      height: 95%;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      color: #555;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    input:focus, select:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 5px rgba(0,123,255,0.3);
+      outline: none;
+    }
+    select {
+      background-color: #f8f9fa;
+      color: #333;
+      cursor: pointer;
+    }
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .done-btn {
+      background-color: #28a745;
+    }
+    .done-btn:hover {
+      background-color: #218838;
+    }
+    .view-report-btn {
+      background-color: #ffc107;
+      color: black;
+    }
+    .view-report-btn:hover {
+      background-color: #e0a800;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1.5rem;
+      flex-grow: 1;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+    li {
+      background: #f1f1f1;
+      padding: 0.7rem;
+      margin-bottom: 0.5rem;
+      border-radius: 6px;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border-radius: 6px;
+      width: 90px;
+      text-align: center;
+    }
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Daily Expense Tracker</h1>
+    
+    <label for="analysis">Select Analysis Type:</label>
+    <select id="analysis">
+      <option value="daily">Daily</option>
+      <option value="3-day">3-Day</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
+
+    <label for="name">Expense Name:</label>
+    <input type="text" id="name" placeholder="e.g., Groceries">
+
+    <label for="amount">Expense Amount (in ₹):</label>
+    <input type="number" id="amount" placeholder="e.g., 500">
+
+    <label for="type">Type:</label>
+    <select id="type">
+      <option value="essential">Essential</option>
+      <option value="non-essential">Non-Essential</option>
+    </select>
+
+    <button onclick="addExpense()">Add Expense</button>
+    <button class="done-btn" onclick="doneForDay()">Done for the Day</button>
+
+    <ul id="expenseList"></ul>
+    <button id="viewReportBtn" class="view-report-btn" style="display:none;" onclick="viewReport()">View Report</button>
+  </div>
+
+  <script>
+    const nameInput = document.getElementById('name');
+    const amountInput = document.getElementById('amount');
+    const typeSelect = document.getElementById('type');
+    const analysisSelect = document.getElementById('analysis');
+    const viewReportBtn = document.getElementById('viewReportBtn');
+    const expenseList = document.getElementById('expenseList');
+
+    let doneClickCount = 0;
+
+    nameInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        amountInput.focus();
+      }
+    });
+
+    amountInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        typeSelect.focus();
+      }
+    });
+
+    // Function to load and display expenses from localStorage
+    function loadExpenses() {
+      const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+      expenseList.innerHTML = ""; // Clear the current list
+
+      expenses.forEach((expense, index) => {
+        const li = document.createElement("li");
+        li.innerHTML = `${expense.name} - ₹${expense.amount} (${expense.type}) 
+                        <button class="delete-btn" onclick="deleteExpense(${index})">Delete</button>`;
+        expenseList.appendChild(li);
+      });
+    }
+
+    function addExpense() {
+      const name = nameInput.value.trim();
+      const amount = amountInput.value.trim();
+      const type = typeSelect.value;
+      const analysisType = analysisSelect.value;
+
+      if (!name || !amount) return;
+
+      const expense = { name, amount, type, analysisType };
+      const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+      expenses.push(expense);
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+
+      loadExpenses(); // Reload the expenses list
+
+      nameInput.value = "";
+      amountInput.value = "";
+      typeSelect.value = "essential";
+      nameInput.focus();
+    }
+
+    function deleteExpense(index) {
+      const expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+      expenses.splice(index, 1); // Remove the expense at the specified index
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+
+      loadExpenses(); // Reload the expenses list after deletion
+    }
+
+    function doneForDay() {
+      doneClickCount++;
+      //alert(`Your expenses for the day have been saved! You have clicked Done ${doneClickCount} times.`);
+
+      const analysisType = analysisSelect.value;
+      const requiredClicks = analysisType === '3-day' ? 3 :
+                            analysisType === 'weekly' ? 7 : 
+                            analysisType === 'monthly' ? 30 : 1;
+
+      if (doneClickCount >= requiredClicks) {
+        viewReportBtn.style.display = 'block';
+      }
+    }
+
+    function viewReport() {
+      window.location.href = 'report.html';
+    }
+
+    // Load expenses on page load
+    window.onload = loadExpenses;
+  </script>
+</body>
+</html>

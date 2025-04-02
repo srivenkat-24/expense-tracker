@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      /* height: 100vh; */
+      min-height: 100vh; /* ✅ Ensures content fits without cutting off */
+      padding: 1rem 0; /* ✅ Adds spacing to prevent content from touching edges */
+    }
+    .container {
+      width: 90%;
+      max-width: 700px;
+      background-color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+    label, p {
+      margin: 0.5rem 0;
+      color: #555;
+    }
+    input {
+      width: 100%;
+      padding: 0.7rem;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 1rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .pie-chart-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .chart-box {
+      width: 45%;
+      max-width: 250px;
+      min-width: 200px;
+      margin-top: 1rem;
+    }
+    .progress-container {
+      width: 100%;
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    .progress-bar {
+      height: 20px;
+      border-radius: 10px;
+      background-color: #ccc;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress {
+      height: 100%;
+      transition: width 0.5s ease-in-out;
+      text-align: center;
+      line-height: 20px;
+      color: white;
+      font-weight: bold;
+    }
+    .salary-text {
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .expense-section {
+      width: 48%;
+      padding: 1rem;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .remaining-salary {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #333;
+      margin-top: 1rem;
+    }
+
+    /* @media (max-width: 768px) {
+      .pie-chart-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .expense-section {
+        width: 100%;
+      }
+    } */
+
+    @media (max-width: 768px) {
+      .pie-chart-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .expense-section {
+        width: 100%;
+        margin-top: 1rem; /* Adds space between stacked sections */
+      }
+      .expense-section:first-child {
+        margin-top: 0; /* Ensures the first section doesn't have extra space */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Expense Report</h1>
+    <div id="salaryInputContainer">
+      <label for="salary">Enter your salary:</label>
+      <input type="number" id="salary" placeholder="e.g., 50000">
+      <button onclick="getAnalysis()">Get Analysis</button>
+    </div>
+    <div id="reportContainer" style="display:none; width: 100%;">
+      <p id="salarySpent" class="salary-text"></p>
+      
+      <div class="pie-chart-container">
+        <div class="expense-section">
+          <h2>Essential Spending</h2>
+          <p id="essentialPercentage"></p>
+          <div class="chart-box">
+            <canvas id="essentialChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="expense-section">
+          <h2>Non-Essential Spending</h2>
+          <p id="nonEssentialPercentage"></p>
+          <div class="chart-box">
+            <canvas id="nonEssentialChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div id="progress" class="progress"></div>
+        </div>
+        <p id="remainingSalaryText" class="remaining-salary"></p>
+      </div>
+    </div>
+  </div>
+  <script>
+    function getAnalysis() {
+      let salary = parseFloat(document.getElementById('salary').value);
+      if (isNaN(salary) || salary <= 0) return;
+      
+      document.getElementById('salaryInputContainer').style.display = 'none';
+      document.getElementById('reportContainer').style.display = 'block';
+      
+      let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+      let essentialExpenses = expenses.filter(e => e.type === 'essential');
+      let nonEssentialExpenses = expenses.filter(e => e.type === 'non-essential');
+      
+      let essentialTotal = essentialExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      let nonEssentialTotal = nonEssentialExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      let totalSpent = essentialTotal + nonEssentialTotal;
+      let remainingSalary = salary - totalSpent;
+      
+      //document.getElementById('salarySpent').innerText = `Total spending took ${((totalSpent / salary) * 100).toFixed(2)}% of salary.`;
+      document.getElementById('salarySpent').innerHTML = `Total spending: ₹${totalSpent.toFixed(2)}<br>(It is ${(totalSpent / salary * 100).toFixed(2)}% of your salary)`;
+      document.getElementById('essentialPercentage').innerText = `Essential spending: ${(essentialTotal / salary * 100).toFixed(2)}% of salary`;
+      document.getElementById('nonEssentialPercentage').innerText = `Non-Essential spending: ${(nonEssentialTotal / salary * 100).toFixed(2)}% of salary`;
+      document.getElementById('remainingSalaryText').innerText = `Remaining Salary: ₹${remainingSalary.toFixed(2)}`;
+      
+      let progress = document.getElementById('progress');
+      let percentRemaining = (remainingSalary / salary) * 100;
+      progress.style.width = `${percentRemaining}%`;
+      progress.innerText = `${percentRemaining.toFixed(2)}% of salary remaining`;
+      progress.style.backgroundColor = percentRemaining > 75 ? 'green' : percentRemaining > 45 ? 'yellow' : 'red';
+      
+      function createPieChart(canvasId, data) {
+        new Chart(document.getElementById(canvasId), {
+          type: 'pie',
+          data: {
+            labels: Object.keys(data),
+            datasets: [{
+              data: Object.values(data),
+              backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40']
+            }]
+          }
+        });
+      }
+      
+      createPieChart('essentialChart', essentialExpenses.reduce((acc, e) => { 
+        let normalizedName = e.name.trim().toLowerCase(); // Normalize to lowercase
+        acc[normalizedName] = (acc[normalizedName] || 0) + parseFloat(e.amount); 
+        return acc; 
+      }, {}));
+
+      createPieChart('nonEssentialChart', nonEssentialExpenses.reduce((acc, e) => { 
+        let normalizedName = e.name.trim().toLowerCase(); // Normalize to lowercase
+        acc[normalizedName] = (acc[normalizedName] || 0) + parseFloat(e.amount); 
+        return acc; 
+      }, {}));
+    }
+  </script>
+</body>
+</html>
